@@ -7,6 +7,7 @@
 #include <cmath>
 #include <chrono>
 #include <ctime>
+#include <time.h>
 
 #include <unordered_map>
 #include <unordered_set>
@@ -593,7 +594,7 @@ int main(int argc, char** argv) {
     bool first = true;
     int iter = -1;
     time_t time_start = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-    cerr << "TRAINING STARTED AT: " << put_time(localtime(&time_start), "%c %Z") << endl;
+    //cerr << "TRAINING STARTED AT: " << put_time(localtime(&time_start), "%c %Z") << endl;
     while(!requested_stop) {
       ++iter;
       for (unsigned sii = 0; sii < status_every_i_iterations; ++sii) {
@@ -626,8 +627,10 @@ int main(int argc, char** argv) {
            trs += actions.size();
       }
       sgd.status();
-      time_t time_now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-      cerr << "update #" << iter << " (epoch " << (tot_seen / corpus.nsentences) << " |time=" << put_time(localtime(&time_now), "%c %Z") << ")\tllh: "<< llh<<" ppl: " << exp(llh / trs) << " err: " << (trs - right) / trs << endl;
+      //time_t time_now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+      time_t time_now = time(NULL);
+      std::string t_n(asctime(localtime(&time_now)));
+      cerr << "update #" << iter << " (epoch " << (tot_seen / corpus.nsentences) << " |time=" << t_n.substr(0, t_n.size() - 1) << ")\tllh: "<< llh<<" ppl: " << exp(llh / trs) << " err: " << (trs - right) / trs << endl;
       llh = trs = right = 0;
 
       static int logc = 0;
@@ -663,6 +666,7 @@ int main(int argc, char** argv) {
         auto t_end = std::chrono::high_resolution_clock::now();
         cerr << "  **dev (iter=" << iter << " epoch=" << (tot_seen / corpus.nsentences) << ")\tllh=" << llh << " ppl: " << exp(llh / trs) << " err: " << (trs - right) / trs << " uas: " << (correct_heads / total_heads) << "\t[" << dev_size << " sents in " << std::chrono::duration<double, std::milli>(t_end-t_start).count() << " ms]" << endl;
         if (correct_heads > best_correct_heads) {
+	  cerr << "saving current best model" << endl;
           best_correct_heads = correct_heads;
           ofstream out(fname);
           boost::archive::text_oarchive oa(out);
